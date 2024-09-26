@@ -1,0 +1,38 @@
+services:
+    todoapi:
+        image: ${DOCKER_REGISTRY-}todoapi
+        build:
+            context: .
+            dockerfile: ToDoApi/Dockerfile
+        depends_on:
+            - pgsql
+    pgsql:
+        image: 'postgres:15'
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE}'
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+        volumes:
+            - 'todoapi-pgsql:/var/lib/postgresql/data'
+        networks:
+            - todoapi
+        healthcheck:
+            test:
+                - CMD
+                - pg_isready
+                - '-q'
+                - '-d'
+                - '${DB_DATABASE}'
+                - '-U'
+                - '${DB_USERNAME}'
+            retries: 3
+            timeout: 5s
+networks:
+    todoapi:
+        driver: bridge
+volumes:
+    todoapi-pgsql:
+        driver: local
